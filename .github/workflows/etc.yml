@@ -1,0 +1,25 @@
+name: Extras
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  commitlint:
+    name: Commit Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Conventional Commits Lint
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: "@commitlint/config-conventional"
