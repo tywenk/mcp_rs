@@ -6,23 +6,44 @@ on:
       - main
 
 jobs:
-  changelog:
-    name: Generate changelog
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate a changelog
+      - name: Install just
+        uses: extractions/setup-just@v1
+        
+      - name: Install git-cliff
         uses: orhun/git-cliff-action@v4
-        id: git-cliff
         with:
-          config: cliff.toml
-          args: --verbose
-        env:
-          OUTPUT: CHANGELOG.md
+          install-only: true
 
-      - name: Print the changelog
-        run: cat "${{ steps.git-cliff.outputs.changelog }}"
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+      - name: Create Release
+        run: |
+            # Get the latest tag
+            latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            
+            # Check all commits since the last tag
+            if git log $latest_tag..HEAD --format=%B | grep -q "BREAKING CHANGE"; then
+              just release major
+            elif git log $latest_tag..HEAD --format=%B | grep -q "feat"; then
+              just release minor
+            else
+              just release patch
+            fi
+          
+      - name: Push changes
+        run: |
+          git push
+          git push --tags
