@@ -18,7 +18,7 @@ jobs:
 
       - name: Install just
         uses: extractions/setup-just@v1
-        
+
       - name: Install git-cliff
         uses: orhun/git-cliff-action@v4
         with:
@@ -28,12 +28,12 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          
+
       - name: Create Release
         run: |
-            # Get the latest tag
-            latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            
+          # Check if we have any tags
+          if git tag -l | grep -q .; then
+            latest_tag=$(git describe --tags --abbrev=0)
             # Check all commits since the last tag
             if git log $latest_tag..HEAD --format=%B | grep -q "BREAKING CHANGE"; then
               just release major
@@ -42,8 +42,13 @@ jobs:
             else
               just release patch
             fi
-          
+          else
+            # First release - start at v0.1.0
+            just release v0.1.0
+          fi
+
       - name: Push changes
         run: |
           git push
           git push --tags
+
